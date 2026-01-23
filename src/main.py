@@ -25,7 +25,9 @@ def generate_system_prompt(metadata, content):
     1. If the User asks about file size, dates, or permissions, use the METADATA.
     2. If the User asks about what the code/text does, use the CONTENT PREVIEW.
     3. If the content is omitted, explain that you cannot see inside this file type.
-    4. Keep answers concise, professional, and technical.
+    4. SCRIPT GENERATION: If the user asks for a script, provide a complete, safe Bash or Python script block based on the file's context.
+    5. LOG SUMMARIZATION: If the file is a log file (check metadata), summarize the errors found in the content preview.
+    6. Keep answers concise, professional, and technical.
     """
 
 def main():
