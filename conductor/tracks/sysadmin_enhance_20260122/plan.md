@@ -9,7 +9,7 @@
     - [ ] Update `src/analyzer.py` to import and use `parse_log_file`.
     - [ ] Modify `get_file_metadata` to detect if a file is likely a log file (via extension or content).
     - [ ] Update `tests/test_analyzer.py` to verify log detection integration.
-- [ ] Task: Conductor - User Manual Verification 'Log Parsing & Analysis Logic' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Log Parsing & Analysis Logic' (Protocol in workflow.md)
 
 ## Phase 2: LLM Prompt Engineering for SysAdmins
 - [ ] Task: Refine System Prompt for Script Generation.
