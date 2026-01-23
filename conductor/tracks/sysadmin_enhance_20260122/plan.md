@@ -5,7 +5,7 @@
     - [ ] Create `src/log_parser.py` and define `parse_log_file(file_path, max_lines=50)` function.
     - [ ] Implement basic keyword scanning (ERROR, WARN, CRITICAL) to extract relevant lines.
     - [ ] Add unit tests in `tests/test_log_parser.py` for standard log formats.
-- [ ] Task: Integrate Log Parser into Analyzer.
+- [x] Task: Integrate Log Parser into Analyzer. [commit: e20ff3e]
     - [ ] Update `src/analyzer.py` to import and use `parse_log_file`.
     - [ ] Modify `get_file_metadata` to detect if a file is likely a log file (via extension or content).
     - [ ] Update `tests/test_analyzer.py` to verify log detection integration.
