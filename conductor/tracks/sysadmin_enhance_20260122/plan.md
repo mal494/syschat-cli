@@ -1,6 +1,6 @@
 # Implementation Plan - Enhance SysChat for System Administrators
 
-## Phase 1: Log Parsing & Analysis Logic
+## Phase 1: Log Parsing & Analysis Logic [checkpoint: c5a0bb6]
 - [x] Task: Create `src/log_parser.py` module. [commit: 6b3e1fc]
     - [ ] Create `src/log_parser.py` and define `parse_log_file(file_path, max_lines=50)` function.
     - [ ] Implement basic keyword scanning (ERROR, WARN, CRITICAL) to extract relevant lines.
