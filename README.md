@@ -1,4 +1,4 @@
-# SysChat 🖥️
+# SysChat 🖥️ ![SysChat Demo](demo.png)
 
 **A Local RAG (Retrieval-Augmented Generation) CLI for System File Analysis.**
 
