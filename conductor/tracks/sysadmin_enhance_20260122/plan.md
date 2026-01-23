@@ -16,7 +16,7 @@
     - [ ] Modify `generate_system_prompt` in `src/main.py`.
     - [ ] Add explicit instructions: "If the user asks for a script, provide a complete, safe Bash or Python script block."
     - [ ] Add instructions for "Log Summarization" based on the extracted log lines.
-- [ ] Task: Test LLM Response Quality.
+- [x] Task: Test LLM Response Quality. [commit: 998fe26]
     - [ ] Create a manual test script or use the CLI to verify `SysChat` produces valid scripts for simple prompts.
 - [ ] Task: Conductor - User Manual Verification 'LLM Prompt Engineering for SysAdmins' (Protocol in workflow.md)
 
