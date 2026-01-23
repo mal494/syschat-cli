@@ -1,11 +1,21 @@
 import sys
 import os
+import argparse
 
 # Ensure Python can find the 'src' modules regardless of where script is run
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from analyzer import get_file_metadata, read_file_safe
 from brain import ask_llm
+from agent import run_agent_loop
+
+# Configure LLM access
+from dotenv import load_dotenv
+load_dotenv()
+
+LLM_API_KEY = os.getenv("LLM_API_KEY")
+LLM_MODEL = os.getenv("LLM_MODEL", "darkidol")  # Default model
+
 
 def generate_system_prompt(metadata, content):
     """
@@ -30,14 +40,7 @@ def generate_system_prompt(metadata, content):
     6. Keep answers concise, professional, and technical.
     """
 
-def main():
-    # 1. Argument Validation
-    if len(sys.argv) < 2:
-        print("\nUsage: python src/main.py <path_to_file>")
-        print("Example: python src/main.py requirements.txt\n")
-        return
-
-    target_file = sys.argv[1]
+def file_chat_mode(target_file):
     print(f"--- SysChat: Analyzing {target_file} ---")
 
     # 2. Harvest Metadata
@@ -78,6 +81,24 @@ def main():
         except KeyboardInterrupt:
             print("\nGoodbye.")
             break
+
+def main():
+    parser = argparse.ArgumentParser(description="SysChat: AI-powered system assistant")
+    parser.add_argument("target", nargs="?", help="File to analyze (File Chat Mode)")
+    parser.add_argument("--agent", action="store_true", help="Start the Autonomous Desktop Agent")
+    parser.add_argument("--goal", type=str, help="Goal for the Desktop Agent (optional, enables non-interactive start)")
+    
+    args = parser.parse_args()
+
+    if args.agent:
+        goal = args.goal
+        if not goal:
+            goal = input("Enter the goal for the Desktop Agent: ")
+        run_agent_loop(goal)
+    elif args.target:
+        file_chat_mode(args.target)
+    else:
+        parser.print_help()
 
 if __name__ == "__main__":
     main()
