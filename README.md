@@ -59,7 +59,7 @@ SysChat operates in three distinct layers:
 
 4. **Configure Model (Optional):**
 
-    # Create a `.env` file to customize the model or use a cloud key.
+   Create a `.env` file to customize the model or use a cloud key
 
     ```ini
     # .env
