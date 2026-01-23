@@ -12,7 +12,7 @@
 - [x] Task: Conductor - User Manual Verification 'Log Parsing & Analysis Logic' (Protocol in workflow.md)
 
 ## Phase 2: LLM Prompt Engineering for SysAdmins
-- [ ] Task: Refine System Prompt for Script Generation.
+- [x] Task: Refine System Prompt for Script Generation. [commit: 5b2b18c]
     - [ ] Modify `generate_system_prompt` in `src/main.py`.
     - [ ] Add explicit instructions: "If the user asks for a script, provide a complete, safe Bash or Python script block."
     - [ ] Add instructions for "Log Summarization" based on the extracted log lines.
