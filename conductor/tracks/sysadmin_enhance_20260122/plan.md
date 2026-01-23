@@ -18,7 +18,7 @@
     - [ ] Add instructions for "Log Summarization" based on the extracted log lines.
 - [x] Task: Test LLM Response Quality. [commit: 998fe26]
     - [ ] Create a manual test script or use the CLI to verify `SysChat` produces valid scripts for simple prompts.
-- [ ] Task: Conductor - User Manual Verification 'LLM Prompt Engineering for SysAdmins' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'LLM Prompt Engineering for SysAdmins' (Protocol in workflow.md)
 
 ## Phase 3: Resilience & Safety Hardening
 - [ ] Task: Enforce 10KB Limit & Error Resilience.

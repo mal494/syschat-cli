@@ -24,5 +24,16 @@ class TestMain(unittest.TestCase):
         self.assertIn("LOG SUMMARIZATION", prompt)
         self.assertIn("summarize the errors found", prompt)
 
+    def test_interaction_prompt_inclusion(self):
+        # This is a bit more of an integration test but it verifies prompt logic
+        metadata = {"filename": "service.log", "is_log_file": True}
+        content = "ERROR: 500 Internal Server Error"
+        prompt = generate_system_prompt(metadata, content)
+        
+        # Verify that the prompt given to LLM would contain the log data
+        self.assertIn("service.log", prompt)
+        self.assertIn("ERROR: 500 Internal Server Error", prompt)
+
+
 if __name__ == '__main__':
     unittest.main()
