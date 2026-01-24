@@ -1,104 +1,135 @@
 import sys
 import os
-import argparse
+import json
+import time
+from pathlib import Path
 
-# Ensure Python can find the 'src' modules regardless of where script is run
+# Add src to path so imports work correctly
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from analyzer import get_file_metadata, read_file_safe
-from brain import ask_llm
-from agent import run_agent_loop
+from analyzer import get_file_metadata, read_file_safe, scan_directory
+from brain import ask_llm, extract_json
+from desktop import DesktopController
 
-# Configure LLM access
-from dotenv import load_dotenv
-load_dotenv()
-
-LLM_API_KEY = os.getenv("LLM_API_KEY")
-LLM_MODEL = os.getenv("LLM_MODEL", "darkidol")  # Default model
-
-
-def generate_system_prompt(metadata, content):
-    """
-    Constructs the prompt engineering that gives the AI its persona.
-    """
-    return f"""
-    ROLE: You are 'SysChat', an expert System Administrator Assistant.
-    TASK: Answer questions about the specific file below based on its metadata and content.
-
-    [FILE METADATA]
-    {metadata}
-
-    [FILE CONTENT PREVIEW]
-    {content}
-
-    GUIDELINES:
-    1. If the User asks about file size, dates, or permissions, use the METADATA.
-    2. If the User asks about what the code/text does, use the CONTENT PREVIEW.
-    3. If the content is omitted, explain that you cannot see inside this file type.
-    4. SCRIPT GENERATION: If the user asks for a script, provide a complete, safe Bash or Python script block based on the file's context.
-    5. LOG SUMMARIZATION: If the file is a log file (check metadata), summarize the errors found in the content preview.
-    6. Keep answers concise, professional, and technical.
-    """
-
-def file_chat_mode(target_file):
-    print(f"--- SysChat: Analyzing {target_file} ---")
-
-    # 2. Harvest Metadata
-    meta = get_file_metadata(target_file)
-    if "error" in meta:
-        print(f"Error: {meta['error']}")
+def main():
+    if len(sys.argv) < 2:
+        print("\nUsage: python src/main.py <mode> [path]")
+        print("Modes:")
+        print("  auto       -> Control the mouse/keyboard")
+        print("  dir <path> -> Audit a folder")
+        print("  file <path> -> Analyze a file")
         return
 
-    # 3. Harvest Content (Safety First)
-    is_readable, content = read_file_safe(target_file, meta.get('size_bytes', 0))
-
-    # 4. Build the Brain
-    system_context = generate_system_prompt(meta, content)
+    mode = sys.argv[1]
+    system_context = ""
     
-    print(f"Target: {meta['filename']} | Size: {meta['size_readable']}")
-    print(f"Content Status: {'Loaded' if is_readable else 'Skipped (See logs)'}")
-    print("--------------------------------------------------")
-    print("Type 'exit' or 'quit' to stop.")
+    # --- MODE 1: AUTOMATION 🤖 ---
+    if mode == "auto":
+        print("--- SysChat: Desktop Automation Mode ---")
+        ctrl = DesktopController()
+        screen_info = ctrl.get_screen_info()
+        
+        system_context = f"""
+        ROLE: You are an AI Agent capable of controlling the user's desktop.
+        SCREEN RESOLUTION: {screen_info['resolution']}
+        
+        AVAILABLE TOOLS (You must output strictly JSON to use these):
+        1. {{"tool": "move", "x": 100, "y": 100}} -> Moves mouse to coordinates.
+        2. {{"tool": "click"}} -> Left mouse click.
+        3. {{"tool": "type", "text": "hello"}} -> Types text.
+        4. {{"tool": "press", "key": "win"}} -> Presses a special key. 
+           (Valid keys: win, enter, esc, tab, space, backspace, up, down, left, right)
+        5. {{"tool": "screenshot", "name": "capture.png"}} -> Saves a screenshot.
+        
+        RULES:
+        - If the user asks for an action, ONLY return the JSON object. Do not add conversational filler.
+        - If the user asks a question, reply with normal text.
+        """
+        print(f"Agent Ready. Screen: {screen_info['resolution']}")
+        print("⚠️  SAFETY: Slam mouse to any corner to abort script.")
 
-    # 5. Interaction Loop
+    # --- MODE 2: DIRECTORY 📂 ---
+    elif mode == "dir":
+        if len(sys.argv) < 3:
+            print("Error: Missing path. Usage: python src/main.py dir <path>")
+            return
+        path = sys.argv[2]
+        print(f"Scanning {path}...")
+        tree, content = scan_directory(path)
+        system_context = f"""
+        ROLE: Lead Developer.
+        [PROJECT TREE]
+        {tree}
+        [CODE CONTENT]
+        {content}
+        INSTRUCTIONS: Analyze the architecture based on the files above.
+        """
+        print("Context Loaded.")
+
+    # --- MODE 3: SINGLE FILE 📄 ---
+    else:
+        # Fallback to file mode. Takes the argument as the path.
+        target_path = sys.argv[2] if len(sys.argv) > 2 else sys.argv[1]
+        
+        print(f"Scanning {target_path}...")
+        meta = get_file_metadata(target_path)
+        if "error" in meta:
+            print(meta['error'])
+            return
+        _, content = read_file_safe(target_path)
+        system_context = f"ROLE: SysAdmin.\n[METADATA]\n{meta}\n[CONTENT]\n{content}"
+        print("File Loaded.")
+
+    # --- MAIN INTERACTION LOOP ---
+    print("--------------------------------------------------")
+    print("Type 'exit' to quit.")
+
+    # Initialize controller for tool execution
+    desktop = DesktopController()
+
     while True:
         try:
             user_input = input("\nYou: ")
             if user_input.lower() in ["exit", "quit"]:
-                print("Goodbye.")
                 break
             
-            if not user_input.strip():
-                continue
+            # 1. Get AI Response
+            print("Thinking...", end="\r")
+            raw_response = ask_llm(system_context, user_input)
+            print(" " * 20, end="\r") # Clear the 'Thinking...' line
 
-            print("SysChat is thinking...", end="\r")
-            answer = ask_llm(system_context, user_input)
+            # 2. Check for Tools (JSON Extraction)
+            is_cmd, cmd_data = extract_json(raw_response)
             
-            # Clear the "thinking" line and print answer
-            print(" " * 20, end="\r") 
-            print(f"SysChat: {answer}")
+            if is_cmd and mode == "auto" and isinstance(cmd_data, dict):
+                tool = cmd_data.get("tool")
+                print(f"⚡ EXECUTING: {str(tool).upper()}...")
+                
+                result = "Unknown tool"
+                
+                # EXECUTION LOGIC
+                if tool == "move":
+                    result = desktop.move_mouse(cmd_data.get("x"), cmd_data.get("y"))
+                elif tool == "click":
+                    result = desktop.click()
+                elif tool == "type":
+                    result = desktop.type_text(cmd_data.get("text"))
+                elif tool == "press":
+                    result = desktop.press_key(cmd_data.get("key"))
+                elif tool == "screenshot":
+                    result = desktop.take_screenshot(cmd_data.get("name", "scr.png"))
+                
+                print(f"✅ Result: {result}")
+                
+            else:
+                # Normal Text Response
+                print(f"SysChat: {raw_response}")
 
         except KeyboardInterrupt:
-            print("\nGoodbye.")
+            print("\nExiting...")
             break
-
-def main():
-    parser = argparse.ArgumentParser(description="SysChat: AI-powered system assistant")
-    parser.add_argument("target", nargs="?", help="File to analyze (File Chat Mode)")
-    parser.add_argument("--agent", action="store_true", help="Start the Autonomous Desktop Agent")
-    parser.add_argument("--goal", type=str, help="Goal for the Desktop Agent (optional, enables non-interactive start)")
-    
-    args = parser.parse_args()
-
-    if args.agent:
-        goal = args.goal
-        if not goal:
-            goal = input("Enter the goal for the Desktop Agent: ")
-        run_agent_loop(goal)
-    elif args.target:
-        file_chat_mode(args.target)
-    else:
-        parser.print_help()
+        except Exception as e:
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()
