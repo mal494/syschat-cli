@@ -69,7 +69,19 @@ SysChat operates in three distinct layers:
 
 ## 💻 Usage
 
-Run the script pointing to any file on your system:
+SysChat adapts its analysis based on your target:
+
+### 1. Single File Mode (Deep Dive)
+
+Analyze a specific file to understand its logic, purpose, or metadata.
 
 ```bash
-python src/main.py <path_to_file>
+python src/main.py src/brain.py
+
+### 2. Automation Mode (AI Agent) 🤖
+Give SysChat control of your mouse and keyboard to perform simple tasks.
+**⚠️ Safety:** Move your mouse to any corner of the screen to instantly kill the script.
+
+```bash
+python src/main.py auto
+```

@@ -56,6 +56,31 @@ class DesktopController:
             
         pyautogui.press(key)
         return f"Pressed {key}"
+    
+    def wait(self, seconds):
+        """Pauses execution for a set time."""
+        time.sleep(float(seconds))
+        return f"Waited {seconds}s"
+    
+    def open_app(self, app_name):
+        """
+        Opens an app by simulating: Win Key -> Type Name -> Enter.
+        This works for almost any installed program.
+        """
+        # 1. Open Start Menu
+        pyautogui.press('win')
+        time.sleep(1.0) # Wait for menu animation
+        
+        # 2. Type App Name
+        pyautogui.write(app_name, interval=0.05)
+        time.sleep(1.0) # Wait for search results
+        
+        # 3. Launch
+        pyautogui.press('enter')
+        
+        # 4. Wait for app to actually open (AI is faster than Windows)
+        time.sleep(2.0) 
+        return f"Opened application: {app_name}"
 
 # Simple test if run directly
 if __name__ == "__main__":

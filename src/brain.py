@@ -62,32 +62,83 @@ def ask_llm(system_context, user_question):
 
 def extract_json(response_text):
     """
-    Scans the text for a JSON object.
-    Returns: (is_json_boolean, dictionary_data_or_original_text)
+    Scans the text for a JSON object OR a JSON list.
+    Returns: (is_json, data)
     """
     import re
     
-    # Attempt 1: Look for standard Markdown JSON blocks ```json ... ```
-    match = re.search(r'```json\s*(\{.*?\})\s*```', response_text, re.DOTALL)
-    if match:
+    # 1. Try to find a JSON List [ ... ]
+    match_list = re.search(r'\[.*\]', response_text, re.DOTALL)
+    if match_list:
         try:
-            return True, json.loads(match.group(1))
+            return True, json.loads(match_list.group(0))
         except:
             pass
 
-    # Attempt 2: Look for the first outer bracket pair { ... }
-    # This regex looks for a curly brace, followed by anything (non-greedy), ending with a curly brace
-    match = re.search(r'\{.*?\}', response_text, re.DOTALL)
-    if match:
+    # 2. Try to find a JSON Object { ... }
+    match_obj = re.search(r'\{.*?\}', response_text, re.DOTALL)
+    if match_obj:
         try:
-            return True, json.loads(match.group(0))
+            return True, json.loads(match_obj.group(0))
         except:
             pass
             
-    # Attempt 3: Sometimes Llama3 returns just the JSON without markdown
-    try:
-        return True, json.loads(response_text)
-    except:
-        pass
-
     return False, response_text
+
+
+def ask_agent(user_question, screen_context):
+    """
+    A specialized brain function for Desktop Automation.
+    Forces the AI to return JSON commands.
+    """
+    model = os.getenv("LLM_MODEL", "llama3") 
+    
+    # 1. Define the Tools (The API for the AI)
+    tools_def = """
+    AVAILABLE TOOLS:
+    1. {"tool": "move_mouse", "args": [x, y]} -> Moves cursor to coordinates.
+    2. {"tool": "click", "args": []} -> Clicks current position.
+    3. {"tool": "type", "args": ["text"]} -> Types text.
+    4. {"tool": "screenshot", "args": ["filename.png"]} -> Saves screen to file.
+    5. {"tool": "response", "args": ["text"]} -> Just talk to the user.
+    """
+
+    # 2. The Strict System Prompt
+    system_prompt = f"""
+    ROLE: You are an AI Desktop Agent. You control the user's mouse and keyboard.
+    
+    CURRENT STATE:
+    {screen_context}
+    
+    {tools_def}
+    
+    INSTRUCTIONS:
+    - You MUST reply with valid JSON only.
+    - Do not write explanations outside the JSON.
+    - Example: {{"tool": "move_mouse", "args": [500, 500]}}
+    """
+    
+    # Re-use the ask_llm logic but with our agent prompt
+    # Note: We just call the existing logic to handle the API connection
+    # (We are assuming the ask_llm function uses the /api/chat endpoint we set up earlier)
+    
+    # For local Ollama, we construct the message manually to ensure formatting
+    url = "http://localhost:11434/api/chat"
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_question}
+        ],
+        "stream": False,
+        "format": "json",  # <--- CRITICAL: Forces Ollama to output valid JSON
+        "temperature": 0.0
+    }
+    
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        return data["message"]["content"]
+    except Exception as e:
+        return json.dumps({"tool": "response", "args": [f"Error: {str(e)}"]})
